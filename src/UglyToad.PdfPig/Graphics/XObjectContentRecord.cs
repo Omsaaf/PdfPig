@@ -2,9 +2,9 @@
 {
     using System;
     using PdfPig.Core;
-    using Tokenization.Tokens;
+    using Tokens;
     using Util.JetBrains.Annotations;
-    using XObject;
+    using XObjects;
 
     internal class XObjectContentRecord
     {

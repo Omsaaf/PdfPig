@@ -1,16 +1,12 @@
 ﻿namespace UglyToad.PdfPig.Tests.Integration
 {
-    using System;
-    using System.IO;
     using Xunit;
 
     public class PigReproductionPowerpointTests
     {
         private static string GetFilename()
         {
-            var documentFolder = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Integration", "Documents"));
-
-            return Path.Combine(documentFolder, "Pig Reproduction Powerpoint.pdf");
+            return IntegrationHelpers.GetDocumentPath("Pig Reproduction Powerpoint.pdf");
         }
 
         [Fact]
@@ -30,6 +26,18 @@
             using (var document = PdfDocument.Open(GetFilename()))
             {
                 Assert.Equal(35, document.NumberOfPages);
+            }
+        }
+
+        [Fact]
+        public void CanReadAllPages()
+        {
+            using (var document = PdfDocument.Open(GetFilename()))
+            {
+                for (var i = 0; i < document.NumberOfPages; i++)
+                {
+                    document.GetPage(i + 1);
+                }
             }
         }
     }

@@ -4,9 +4,14 @@ namespace UglyToad.PdfPig.Fonts.CompactFontFormat
 {
     internal class CompactFontFormatIndexReader
     {
-        public byte[][] ReadDictionaryData(CompactFontFormatData data)
+        public CompactFontFormatIndex ReadDictionaryData(CompactFontFormatData data)
         {
             var index = ReadIndex(data);
+
+            if (index.Length == 0)
+            {
+                return new CompactFontFormatIndex(null);
+            }
 
             var count = index.Length - 1;
 
@@ -21,15 +26,25 @@ namespace UglyToad.PdfPig.Fonts.CompactFontFormat
                     throw new InvalidOperationException($"Negative object length {length} at {i}. Current position: {data.Position}.");
                 }
 
+                if (length > data.Length)
+                {
+                    throw new InvalidOperationException($"Attempted to read data of length {length} in data array of length {data.Length}.");
+                }
+
                 results[i] = data.ReadBytes(length);
             }
 
-            return results;
+            return new CompactFontFormatIndex(results);
         }
 
         public int[] ReadIndex(CompactFontFormatData data)
         {
             var count = data.ReadCard16();
+
+            if (count == 0)
+            {
+                return Array.Empty<int>();
+            }
 
             var offsetSize = data.ReadOffsize();
 

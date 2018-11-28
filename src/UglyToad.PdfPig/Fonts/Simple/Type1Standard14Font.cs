@@ -5,7 +5,7 @@
     using Encodings;
     using Geometry;
     using IO;
-    using Tokenization.Tokens;
+    using Tokens;
 
     internal class Type1Standard14Font: IFont
     {
@@ -50,7 +50,7 @@
 
             boundingBox = fontMatrix.Transform(boundingBox);
 
-            return new CharacterBoundingBox(boundingBox, boundingBox);
+            return new CharacterBoundingBox(boundingBox, boundingBox.Width);
         }
 
         private PdfRectangle GetBoundingBoxInGlyphSpace(int characterCode)
@@ -62,7 +62,7 @@
                 return new PdfRectangle(0, 0, 250, 0);
             }
 
-            return new PdfRectangle(0, 0, metrics.WidthX, 0);
+            return new PdfRectangle(0, 0, metrics.WidthX, metrics.WidthY);
         }
 
         public TransformationMatrix GetFontMatrix()

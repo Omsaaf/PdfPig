@@ -4,9 +4,9 @@
     using System.Collections.Generic;
     using Core;
 
-    internal class CompactFontFormatTopLevelDictionaryReader : CompactFontFormatDictionaryReader<CompactFontFormatTopLevelDictionary>
+    internal class CompactFontFormatTopLevelDictionaryReader : CompactFontFormatDictionaryReader<CompactFontFormatTopLevelDictionary, CompactFontFormatTopLevelDictionary>
     {
-        public override CompactFontFormatTopLevelDictionary Read(CompactFontFormatData data, string[] stringIndex)
+        public override CompactFontFormatTopLevelDictionary Read(CompactFontFormatData data, IReadOnlyList<string> stringIndex)
         {
             var dictionary = new CompactFontFormatTopLevelDictionary();
 
@@ -15,7 +15,7 @@
             return dictionary;
         }
 
-        protected override void ApplyOperation(CompactFontFormatTopLevelDictionary dictionary, List<Operand> operands, OperandKey key, string[] stringIndex)
+        protected override void ApplyOperation(CompactFontFormatTopLevelDictionary dictionary, List<Operand> operands, OperandKey key, IReadOnlyList<string> stringIndex)
         {
             switch (key.Byte0)
             {
@@ -65,7 +65,7 @@
                                 dictionary.PaintType = operands[0].Decimal;
                                 break;
                             case 6:
-                                dictionary.CharstringType = GetIntOrDefault(operands);
+                                dictionary.CharStringType = (CompactFontFormatCharStringType)GetIntOrDefault(operands, 2);
                                 break;
                             case 7:
                                 {
@@ -136,7 +136,7 @@
                         var size = GetIntOrDefault(operands);
                         operands.RemoveAt(0);
                         var offset = GetIntOrDefault(operands);
-                        dictionary.PrivateDictionarySizeAndOffset = Tuple.Create(size, offset);
+                        dictionary.PrivateDictionaryLocation = new CompactFontFormatTopLevelDictionary.SizeAndOffset(size, offset);
                     }
                     break;
             }

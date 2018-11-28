@@ -11,9 +11,7 @@
     {
         private static string GetFilename()
         {
-            var documentFolder = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Integration", "Documents"));
-
-            return Path.Combine(documentFolder, "Single Page Non Latin - from acrobat distiller.pdf");
+            return IntegrationHelpers.GetDocumentPath("Single Page Non Latin - from acrobat distiller.pdf");
         }
 
         [Fact]
@@ -70,7 +68,7 @@
                         break;
                     }
 
-                    var myX = pageLetter.CharacterRectangle.Left;
+                    var myX = pageLetter.Location.X;
                     var theirX = pdfBoxData[index].X;
 
                     var myLetter = pageLetter.Value;
@@ -87,7 +85,7 @@
 
                     Assert.Equal(theirX, myX, comparer);
 
-                    Assert.Equal(pdfBoxData[index].Width, pageLetter.CharacterRectangle.Width, comparer);
+                    Assert.Equal(pdfBoxData[index].Width, pageLetter.Width, comparer);
 
                     index++;
                 }
@@ -113,7 +111,7 @@
                         break;
                     }
 
-                    var myX = pageLetter.CharacterRectangle.Left;
+                    var myX = pageLetter.Location.X;
                     var theirX = positions[index].X;
 
                     var myLetter = pageLetter.Value;
@@ -127,7 +125,7 @@
                     Assert.Equal(theirLetter, myLetter);
                     Assert.Equal(theirX, myX, comparer);
 
-                    Assert.Equal(positions[index].Width, pageLetter.CharacterRectangle.Width, 1);
+                    Assert.Equal(positions[index].Width, pageLetter.Width, 1);
 
                     index++;
                 }
@@ -152,7 +150,7 @@
 218.6352	90.65997	9.990005	d	19	FFJICI+TimesNewRomanPSMT
 228.6252	90.65997	4.994995	.	19	FFJICI+TimesNewRomanPSMT";
 
-            var result = data.Split(new[] {"\r", "\n", "\r\n"}, StringSplitOptions.RemoveEmptyEntries)
+            var result = data.Split(new[] { "\r", "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(AssertablePositionData.Parse)
                 .ToList();
 

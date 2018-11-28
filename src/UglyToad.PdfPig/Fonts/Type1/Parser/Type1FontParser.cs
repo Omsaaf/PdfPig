@@ -7,14 +7,14 @@
     using IO;
     using Tokenization;
     using Tokenization.Scanner;
-    using Tokenization.Tokens;
+    using Tokens;
 
     internal class Type1FontParser
     {
         private const string ClearToMark = "cleartomark";
 
         private const int PfbFileIndicator = 0x80;
-        
+
         private readonly Type1EncryptedPortionParser encryptedPortionParser;
 
         public Type1FontParser(Type1EncryptedPortionParser encryptedPortionParser)
@@ -29,7 +29,7 @@
         /// <param name="length1">The length in bytes of the clear text portion of the font program.</param>
         /// <param name="length2">The length in bytes of the encrypted portion of the font program.</param>
         /// <returns>The parsed type 1 font.</returns>
-        public Type1Font Parse(IInputBytes inputBytes, int length1, int length2)
+        public Type1FontProgram Parse(IInputBytes inputBytes, int length1, int length2)
         {
             // Sometimes the entire PFB file including the header bytes can be included which prevents parsing in the normal way.
             var isEntirePfbFile = inputBytes.Peek() == PfbFileIndicator;
@@ -146,9 +146,9 @@
             var matrix = GetFontMatrix(dictionaries);
             var boundingBox = GetBoundingBox(dictionaries);
 
-            encryptedPortionParser.Parse(eexecPortion);
+            var (privateDictionary, charStrings) = encryptedPortionParser.Parse(eexecPortion, false);
 
-            return new Type1Font(name, encoding, matrix, boundingBox ?? new PdfRectangle());
+            return new Type1FontProgram(name, encoding, matrix, boundingBox ?? new PdfRectangle(), privateDictionary, charStrings);
         }
 
         /// <summary>

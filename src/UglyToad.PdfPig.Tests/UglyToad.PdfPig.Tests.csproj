@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
@@ -30,11 +30,49 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <EmbeddedResource Remove="Fonts\TrueType\Andada-Regular.ttf" />
+    <EmbeddedResource Remove="Fonts\TrueType\google-simple-doc.ttf" />
+    <EmbeddedResource Remove="Fonts\TrueType\Roboto-Regular.ttf" />
+    <EmbeddedResource Remove="Fonts\Type1\AdobeUtopia.pfa" />
+    <EmbeddedResource Remove="Fonts\Type1\CMBX10.pfa" />
+    <EmbeddedResource Remove="Fonts\Type1\CMBX12.pfa" />
+    <EmbeddedResource Remove="Fonts\Type1\CMCSC10.pfa" />
+    <EmbeddedResource Remove="Fonts\Type1\Raleway-Black.pfb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Fonts\CompactFontFormat\MinionPro.bin" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Fonts\CompactFontFormat\MinionPro.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fonts\TrueType\Andada-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fonts\TrueType\google-simple-doc.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fonts\TrueType\Roboto-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fonts\Type1\AdobeUtopia.pfa" />
+    <Content Include="Fonts\Type1\CMBX10.pfa" />
+    <Content Include="Fonts\Type1\CMBX12.pfa" />
+    <Content Include="Fonts\Type1\CMCSC10.pfa" />
+    <Content Include="Fonts\Type1\Raleway-Black.pfb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
     <PackageReference Include="System.Drawing.Common" Version="4.5.0-preview2-26406-04" />
-    <PackageReference Include="xunit" Version="2.3.1" />
-    <PackageReference Include="xunit.extensibility.execution" Version="2.3.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.extensibility.execution" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>

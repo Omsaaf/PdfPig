@@ -1,5 +1,6 @@
 ﻿namespace UglyToad.PdfPig.Fonts.Parser.Handlers
 {
+    using System.Linq;
     using Cmap;
     using CompactFontFormat;
     using Encodings;
@@ -10,7 +11,7 @@
     using PdfPig.Parser.Parts;
     using Simple;
     using Tokenization.Scanner;
-    using Tokenization.Tokens;
+    using Tokens;
     using Type1;
     using Type1.Parser;
     using Util;
@@ -66,7 +67,7 @@
 
             var descriptor = FontDictionaryAccessHelper.GetFontDescriptor(pdfScanner, fontDescriptorFactory, dictionary, isLenientParsing);
 
-            var font = ParseType1Font(descriptor, isLenientParsing);
+            var font = ParseFontProgram(descriptor, isLenientParsing);
 
             var name = FontDictionaryAccessHelper.GetName(pdfScanner, dictionary, descriptor, isLenientParsing);
             
@@ -85,15 +86,15 @@
 
             Encoding encoding = encodingReader.Read(dictionary, isLenientParsing, descriptor);
 
-            if (encoding == null && font?.Encoding.Count > 0)
+            if (encoding == null)
             {
-                encoding = new BuiltInEncoding(font.Encoding);
+                font?.Match(x => encoding = new BuiltInEncoding(x.Encoding), _ => {});
             }
 
-            return new Type1FontSimple(name, firstCharacter, lastCharacter, widths, descriptor, encoding, toUnicodeCMap);
+            return new Type1FontSimple(name, firstCharacter, lastCharacter, widths, descriptor, encoding, toUnicodeCMap, font);
         }
 
-        private Type1Font ParseType1Font(FontDescriptor descriptor, bool isLenientParsing)
+        private Union<Type1FontProgram, CompactFontFormatFontProgram> ParseFontProgram(FontDescriptor descriptor, bool isLenientParsing)
         {
             if (descriptor?.FontFile == null)
             {
@@ -118,8 +119,9 @@
                 if (stream.StreamDictionary.TryGet(NameToken.Subtype, out NameToken subTypeName)
                 && NameToken.Type1C.Equals(subTypeName))
                 {
-                    compactFontFormatParser.Parse(new CompactFontFormatData(bytes));
-                    return null;
+                    var str = OtherEncodings.BytesAsLatin1String(bytes.ToArray());
+                    var cffFont = compactFontFormatParser.Parse(new CompactFontFormatData(bytes));
+                    return Union<Type1FontProgram, CompactFontFormatFontProgram>.Two(cffFont);
                 }
 
                 var length1 = stream.StreamDictionary.Get<NumericToken>(NameToken.Length1, pdfScanner);
@@ -127,7 +129,7 @@
                 
                 var font = type1FontParser.Parse(new ByteArrayInputBytes(bytes), length1.Int, length2.Int);
 
-                return font;
+                return Union<Type1FontProgram, CompactFontFormatFontProgram>.One(font);
             }
             catch
             {

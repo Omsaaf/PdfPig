@@ -1,18 +1,26 @@
 ﻿namespace UglyToad.PdfPig.Fonts.Simple
 {
+    using System;
+    using System.Collections.Generic;
     using Cmap;
+    using CompactFontFormat;
     using Composite;
     using Core;
     using Encodings;
     using Geometry;
     using IO;
-    using Tokenization.Tokens;
+    using Tokens;
+    using Type1;
+    using Util;
+    using Util.JetBrains.Annotations;
 
     /// <summary>
     /// A font based on the Adobe Type 1 font format.
     /// </summary>
     internal class Type1FontSimple : IFont
     {
+        private readonly Dictionary<int, CharacterBoundingBox> cachedBoundingBoxes = new Dictionary<int, CharacterBoundingBox>();
+
         private readonly int firstChar;
 
         private readonly int lastChar;
@@ -23,22 +31,34 @@
 
         private readonly Encoding encoding;
 
+        [CanBeNull]
+        private readonly Union<Type1FontProgram, CompactFontFormatFontProgram> fontProgram;
+
         private readonly ToUnicodeCMap toUnicodeCMap;
 
-        private readonly TransformationMatrix fontMatrix = TransformationMatrix.FromValues(0.001m, 0, 0, 0.001m, 0, 0);
+        private readonly TransformationMatrix fontMatrix;
 
         public NameToken Name { get; }
 
         public bool IsVertical { get; } = false;
 
-        public Type1FontSimple(NameToken name, int firstChar, int lastChar, decimal[] widths, FontDescriptor fontDescriptor, Encoding encoding, CMap toUnicodeCMap)
+        public Type1FontSimple(NameToken name, int firstChar, int lastChar, decimal[] widths, FontDescriptor fontDescriptor, Encoding encoding, 
+            CMap toUnicodeCMap,
+            Union<Type1FontProgram, CompactFontFormatFontProgram> fontProgram)
         {
             this.firstChar = firstChar;
             this.lastChar = lastChar;
             this.widths = widths;
             this.fontDescriptor = fontDescriptor;
             this.encoding = encoding;
+            this.fontProgram = fontProgram;
             this.toUnicodeCMap = new ToUnicodeCMap(toUnicodeCMap);
+
+            var matrix = TransformationMatrix.FromValues(0.001m, 0, 0, 0.001m, 0, 0);
+            fontProgram?.Match(x => matrix = x.GetFontTransformationMatrix(), x => { matrix = x.GetFontTransformationMatrix(); });
+
+            fontMatrix = matrix;
+
             Name = name;
         }
 
@@ -66,14 +86,22 @@
                 }
                 catch
                 {
-                    // our quick hack has failed, we should decode the type 1 font!
-                }
+                    if (fontProgram == null)
+                    {
+                        return false;
+                    }
 
-                return false;
+                    var containsEncoding = false;
+                    var capturedValue = default(string);
+                    fontProgram.Match(x => { containsEncoding = x.Encoding.TryGetValue(characterCode, out capturedValue); },
+                        _ => {});
+                    value = capturedValue;
+                    return containsEncoding;
+                }
             }
 
             var name = encoding.GetName(characterCode);
-
+            
             try
             {
                 value = GlyphList.AdobeGlyphList.NameToUnicode(name);
@@ -88,13 +116,26 @@
 
         public CharacterBoundingBox GetBoundingBox(int characterCode)
         {
+            if (cachedBoundingBoxes.TryGetValue(characterCode, out var box))
+            {
+                return box;
+            }
+
             var boundingBox = GetBoundingBoxInGlyphSpace(characterCode);
 
-            boundingBox = fontMatrix.Transform(boundingBox);
+            var matrix = fontMatrix;
 
-            return new CharacterBoundingBox(boundingBox, boundingBox);
+            boundingBox = matrix.Transform(boundingBox);
+
+            var width = matrix.TransformX(widths[characterCode - firstChar]);
+
+            var result = new CharacterBoundingBox(boundingBox, width);
+
+            cachedBoundingBoxes[characterCode] = result;
+
+            return result;
         }
-
+        
         private PdfRectangle GetBoundingBoxInGlyphSpace(int characterCode)
         {
             if (characterCode < firstChar || characterCode > lastChar)
@@ -102,7 +143,37 @@
                 return new PdfRectangle(0, 0, 250, 0);
             }
 
-            return new PdfRectangle(0, 0, widths[characterCode - firstChar], 0);
+            if (fontProgram == null)
+            {
+                return new PdfRectangle(0, 0, widths[characterCode - firstChar], 0);
+            }
+
+            var rect = default(PdfRectangle?);
+            fontProgram.Match(x =>
+                {
+                    rect = x.GetCharacterBoundingBox(characterCode);
+                },
+                x =>
+                {
+                    string characterName;
+                    if (encoding != null)
+                    {
+                        characterName = encoding.GetName(characterCode);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException("Unclear how to access the character name for CFF fonts when no encoding is present.");
+                    }
+                    rect = x.GetCharacterBoundingBox(characterName);
+                });
+
+            if (!rect.HasValue)
+            {
+                return new PdfRectangle(0, 0, widths[characterCode - firstChar], 0);
+            }
+
+            // ReSharper disable once PossibleInvalidOperationException
+            return rect.Value;
         }
 
         public TransformationMatrix GetFontMatrix()

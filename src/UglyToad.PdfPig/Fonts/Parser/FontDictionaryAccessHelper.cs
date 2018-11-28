@@ -4,7 +4,7 @@
     using Parts;
     using PdfPig.Parser.Parts;
     using Tokenization.Scanner;
-    using Tokenization.Tokens;
+    using Tokens;
 
     internal static class FontDictionaryAccessHelper
     {
@@ -63,7 +63,7 @@
 
             var parsed = DirectObjectFinder.Get<DictionaryToken>(obj, pdfScanner);
             
-            var descriptor = fontDescriptorFactory.Generate(parsed, isLenientParsing);
+            var descriptor = fontDescriptorFactory.Generate(parsed, pdfScanner, isLenientParsing);
 
             return descriptor;
         }

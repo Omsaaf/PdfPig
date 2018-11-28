@@ -9,7 +9,7 @@
     using IO;
     using PdfPig.Parser.Parts;
     using Tokenization.Scanner;
-    using Tokenization.Tokens;
+    using Tokens;
     using TrueType;
     using TrueType.Parser;
     using Util;
@@ -44,7 +44,7 @@
             FontDescriptor descriptor = null;
             if (TryGetFontDescriptor(dictionary, out var descriptorDictionary))
             {
-                descriptor = descriptorFactory.Generate(descriptorDictionary, isLenientParsing);
+                descriptor = descriptorFactory.Generate(descriptorDictionary, pdfScanner, isLenientParsing);
             }
 
             var fontProgram = ReadDescriptorFile(descriptor);
@@ -248,7 +248,7 @@
 
             if (entry is NameToken name)
             {
-                if (!name.Equals(NameToken.CidToGidMap) && !isLenientParsing)
+                if (!name.Equals(NameToken.Identity) && !isLenientParsing)
                 {
                     throw new InvalidOperationException($"The CIDToGIDMap in a Type 0 font should have the value /Identity, instead got: {name}.");
                 }

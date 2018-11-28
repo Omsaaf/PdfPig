@@ -1,7 +1,7 @@
 ﻿namespace UglyToad.PdfPig.Fonts.CompactFontFormat
 {
     using System;
-    using System.Text;
+    using System.Collections.Generic;
     using Util;
 
     internal class CompactFontFormatParser
@@ -19,18 +19,19 @@
             this.indexReader = indexReader;
         }
 
-        public void Parse(CompactFontFormatData data)
+        public CompactFontFormatFontProgram Parse(CompactFontFormatData data)
         {
             var tag = ReadTag(data);
 
             switch (tag)
             {
+                // An OpenType font containing CFF data.
                 case TagOtto:
-                    throw new NotImplementedException("Currently tagged CFF data is not supported.");
+                    throw new NotSupportedException("Currently tagged CFF data is not supported.");
                 case TagTtcf:
-                    throw new NotSupportedException("True Type Collection fonts are not supported.");
+                    throw new NotSupportedException("True Type Collection fonts are not currently supported.");
                 case TagTtfonly:
-                    throw new NotSupportedException("OpenType fonts containing a true type font are not supported.");
+                    throw new NotSupportedException("OpenType fonts containing a true type font are not currently supported.");
                 default:
                     data.Seek(0);
                     break;
@@ -40,18 +41,22 @@
 
             var fontNames = ReadStringIndex(data);
 
-            var topLevelDict = indexReader.ReadDictionaryData(data);
+            var topLevelDictionaryIndex = indexReader.ReadDictionaryData(data);
 
             var stringIndex = ReadStringIndex(data);
 
             var globalSubroutineIndex = indexReader.ReadDictionaryData(data);
 
+            var fonts = new Dictionary<string, CompactFontFormatFont>();
+
             for (var i = 0; i < fontNames.Length; i++)
             {
                 var fontName = fontNames[i];
 
-                individualFontParser.Parse(data, fontName, topLevelDict[i], stringIndex);
+                fonts[fontName] = individualFontParser.Parse(data, fontName, topLevelDictionaryIndex[i], stringIndex, globalSubroutineIndex);
             }
+
+            return new CompactFontFormatFontProgram(header, fonts);
         }
 
         private static string ReadTag(CompactFontFormatData data)
@@ -95,128 +100,6 @@
             }
 
             return result;
-        }
-    }
-
-    internal class CompactFontFormatData
-    {
-        private readonly byte[] dataBytes;
-
-        public int Position { get; private set; } = -1;
-
-        public CompactFontFormatData(byte[] dataBytes)
-        {
-            this.dataBytes = dataBytes;
-        }
-
-        public string ReadString(int length, Encoding encoding)
-        {
-            var bytes = new byte[length];
-
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                bytes[i] = ReadByte();
-            }
-
-            return encoding.GetString(bytes);
-        }
-
-        public byte ReadCard8()
-        {
-            return ReadByte();
-        }
-
-        public ushort ReadCard16()
-        {
-            return (ushort)(ReadByte() << 8 | ReadByte());
-        }
-
-        public byte ReadOffsize()
-        {
-            return ReadByte();
-        }
-
-        public int ReadOffset(int offsetSize)
-        {
-            var value = 0;
-
-            for (var i = 0; i < offsetSize; i++)
-            {
-                value = value << 8 | ReadByte();
-            }
-
-            return value;
-        }
-
-        public byte ReadByte()
-        {
-            Position++;
-
-            if (Position >= dataBytes.Length)
-            {
-                throw new IndexOutOfRangeException($"Cannot read byte at position {Position} of an array which is {dataBytes.Length} bytes long.");
-            }
-
-            return dataBytes[Position];
-        }
-
-        public byte Peek()
-        {
-            return dataBytes[Position + 1];
-        }
-
-        public bool CanRead()
-        {
-            return Position < dataBytes.Length - 1;
-        }
-
-        public void Seek(int offset)
-        {
-            Position = offset - 1;
-        }
-
-        public long ReadLong()
-        {
-            return (ReadCard16() << 16) | ReadCard16();
-        }
-
-        public byte[] ReadBytes(int length)
-        {
-            var result = new byte[length];
-
-            for (int i = 0; i < length; i++)
-            {
-                result[i] = ReadByte();
-            }
-
-            return result;
-        }
-    }
-
-    /// <summary>
-    /// The header table for the binary data of a CFF file.
-    /// </summary>
-    internal struct CompactFontFormatHeader
-    {
-        public byte MajorVersion { get; }
-
-        public byte MinorVersion { get; }
-
-        public byte SizeInBytes { get; }
-
-        public byte OffsetSize { get; }
-
-        public CompactFontFormatHeader(byte majorVersion, byte minorVersion, byte sizeInBytes, byte offsetSize)
-        {
-            MajorVersion = majorVersion;
-            MinorVersion = minorVersion;
-            SizeInBytes = sizeInBytes;
-            OffsetSize = offsetSize;
-        }
-
-        public override string ToString()
-        {
-            return $"Major: {MajorVersion}, Minor: {MinorVersion}, Header Size: {SizeInBytes}, Offset: {OffsetSize}";
         }
     }
 }

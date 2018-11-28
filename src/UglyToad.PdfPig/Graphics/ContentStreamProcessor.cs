@@ -10,9 +10,9 @@
     using Operations;
     using PdfPig.Core;
     using Tokenization.Scanner;
-    using Tokenization.Tokens;
+    using Tokens;
     using Util;
-    using XObject;
+    using XObjects;
 
     internal class ContentStreamProcessor : IOperationContext
     {
@@ -123,7 +123,8 @@
 
                 if (!foundUnicode && !isLenientParsing)
                 {
-                    throw new InvalidOperationException($"We could not find the corresponding character with code {code} in font {font.Name}.");
+                    // TODO: record warning
+                    // throw new InvalidOperationException($"We could not find the corresponding character with code {code} in font {font.Name}.");
                 }
 
                 var wordSpacing = 0m;
@@ -143,21 +144,21 @@
                     .Transform(TextMatrices.TextMatrix
                     .Transform(renderingMatrix
                     .Transform(boundingBox.GlyphBounds)));
-                var transformedGlyphOrigin = transformationMatrix
+                var transformedPdfBounds = transformationMatrix
                     .Transform(TextMatrices.TextMatrix
-                        .Transform(renderingMatrix.Transform(boundingBox.CharacterBounds)));
+                        .Transform(renderingMatrix.Transform(new PdfRectangle(0, 0, boundingBox.Width, 0))));
 
-                ShowGlyph(font, transformedGlyphBounds, transformedGlyphOrigin, unicode, fontSize, pointSize);
+                ShowGlyph(font, transformedGlyphBounds, transformedPdfBounds.BottomLeft, transformedPdfBounds.Width, unicode, fontSize, pointSize);
 
                 decimal tx, ty;
                 if (font.IsVertical)
                 {
                     tx = 0;
-                    ty = boundingBox.CharacterBounds.Height * fontSize + characterSpacing + wordSpacing;
+                    ty = boundingBox.GlyphBounds.Height * fontSize + characterSpacing + wordSpacing;
                 }
                 else
                 {
-                    tx = (boundingBox.CharacterBounds.Width * fontSize + characterSpacing + wordSpacing) * horizontalScaling;
+                    tx = (boundingBox.Width * fontSize + characterSpacing + wordSpacing) * horizontalScaling;
                     ty = 0;
                 }
 
@@ -253,9 +254,9 @@
             TextMatrices.TextMatrix = newMatrix;
         }
 
-        private void ShowGlyph(IFont font, PdfRectangle glyphRectangle, PdfRectangle characterRectangle,  string unicode, decimal fontSize, decimal pointSize)
+        private void ShowGlyph(IFont font, PdfRectangle glyphRectangle, PdfPoint position, decimal width, string unicode, decimal fontSize, decimal pointSize)
         {
-            var letter = new Letter(unicode, glyphRectangle, characterRectangle, fontSize, font.Name.Data, pointSize);
+            var letter = new Letter(unicode, glyphRectangle, position, width, fontSize, font.Name.Data, pointSize);
 
             Letters.Add(letter);
         }

@@ -13,14 +13,21 @@
         public string Value { get; }
 
         /// <summary>
-        /// Position of the bounding box for the glyph.
+        /// The placement position of the character in PDF space.
         /// </summary>
-        public PdfRectangle GlyphRectangle { get; }
+        public PdfPoint Location { get; }
 
         /// <summary>
-        /// The bounding box for the entire character.
+        /// The width occupied by the character within the PDF content.
         /// </summary>
-        public PdfRectangle CharacterRectangle { get; }
+        public decimal Width { get; }
+
+        /// <summary>
+        /// Position of the bounding box for the glyph, this is the box surrounding the visible glyph as it appears on the page.
+        /// For example letters with descenders, p, j, etc., will have a box extending below the <see cref="Location"/> they are placed at.
+        /// The width of the glyph may also be more or less than the <see cref="Width"/> allocated for the character in the PDF content.
+        /// </summary>
+        public PdfRectangle GlyphRectangle { get; }
 
         /// <summary>
         /// Size as defined in the PDF file. This is not equivalent to font size in points but is relative to other font sizes on the page.
@@ -40,14 +47,15 @@
         /// <summary>
         /// Create a new letter to represent some text drawn by the Tj operator.
         /// </summary>
-        internal Letter(string value, PdfRectangle glyphRectangle, PdfRectangle characterRectangle, decimal fontSize, string fontName, decimal pointSize)
+        internal Letter(string value, PdfRectangle glyphRectangle, PdfPoint location, decimal width, decimal fontSize, string fontName, decimal pointSize)
         {
             Value = value;
             GlyphRectangle = glyphRectangle;
             FontSize = fontSize;
             FontName = fontName;
             PointSize = pointSize;
-            CharacterRectangle = characterRectangle;
+            Location = location;
+            Width = width;
         }
 
         /// <summary>
@@ -55,7 +63,7 @@
         /// </summary>
         public override string ToString()
         {
-            return $"{Value} {GlyphRectangle} {FontName} {PointSize}";
+            return $"{Value} {Location} {FontName} {PointSize}";
         }
     }
 }

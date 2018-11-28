@@ -1,12 +1,13 @@
 ﻿namespace UglyToad.PdfPig.Fonts.Simple
 {
+    using System;
     using Cmap;
     using Composite;
     using Core;
     using Encodings;
     using Geometry;
     using IO;
-    using Tokenization.Tokens;
+    using Tokens;
     using TrueType;
     using Util.JetBrains.Annotations;
 
@@ -21,7 +22,7 @@
         private readonly Encoding encoding;
 
         [CanBeNull]
-        private readonly TrueTypeFont font;
+        private readonly TrueTypeFontProgram fontProgram;
 
         private readonly int firstCharacter;
 
@@ -38,13 +39,13 @@
             FontDescriptor descriptor,
             [CanBeNull] CMap toUnicodeCMap,
             [CanBeNull] Encoding encoding,
-            [CanBeNull] TrueTypeFont font,
+            [CanBeNull] TrueTypeFontProgram fontProgram,
             int firstCharacter,
             decimal[] widths)
         {
             this.descriptor = descriptor;
             this.encoding = encoding;
-            this.font = font;
+            this.fontProgram = fontProgram;
             this.firstCharacter = firstCharacter;
             this.widths = widths;
 
@@ -107,48 +108,52 @@
             }
             
             decimal width;
-            if (font == null)
+
+            var index = characterCode - firstCharacter;
+            if (widths != null && index >= 0 && index < widths.Length)
             {
                 fromFont = false;
-                 width = widths[characterCode];
+                 width = widths[index];
             }
-            else
+            else if (fontProgram != null)
             {
-                if (!font.TryGetBoundingAdvancedWidth(characterCode, out width))
+                if (!fontProgram.TryGetBoundingAdvancedWidth(characterCode, out width))
                 {
                     width = boundingBoxPreTransform;
                 }
             }
+            else
+            {
+                throw new InvalidOperationException($"Could not retrieve width for character code: {characterCode} in font {Name}.");
+            }
             
-            var advancedRectangle = new PdfRectangle(0, 0, width, 0);
-
             if (fromFont)
             {
-                advancedRectangle = fontMatrix.Transform(advancedRectangle);
+                width = fontMatrix.Transform(new PdfVector(width, 0)).X;
             }
             else
             {
-                advancedRectangle = DefaultTransformation.Transform(advancedRectangle);
+                width = DefaultTransformation.Transform(new PdfVector(width, 0)).X;
             }
 
-            return new CharacterBoundingBox(boundingBox, advancedRectangle);
+            return new CharacterBoundingBox(boundingBox, width);
         }
 
         private PdfRectangle GetBoundingBoxInGlyphSpace(int characterCode, out bool fromFont)
         {
             fromFont = true;
             
-            if (font == null)
+            if (fontProgram == null)
             {
                 return descriptor.BoundingBox;
             }
 
-            if (font.TryGetBoundingBox(characterCode, out var bounds))
+            if (fontProgram.TryGetBoundingBox(characterCode, out var bounds))
             {
                 return bounds;
             }
 
-            if (font.TryGetBoundingAdvancedWidth(characterCode, out var width))
+            if (fontProgram.TryGetBoundingAdvancedWidth(characterCode, out var width))
             {
                 return new PdfRectangle(0, 0, width, 0);
             }
@@ -174,9 +179,9 @@
         {
             var scale = 1000m;
 
-            if (font?.HeaderTable != null)
+            if (fontProgram?.TableRegister.HeaderTable != null)
             {
-                scale = font.GetFontMatrixMultiplier();
+                scale = fontProgram.GetFontMatrixMultiplier();
             }
 
             return TransformationMatrix.FromValues(1m / scale, 0, 0, 1m / scale, 0, 0);

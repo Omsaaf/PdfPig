@@ -11,7 +11,7 @@
     using PdfPig.Parser.Parts;
     using Simple;
     using Tokenization.Scanner;
-    using Tokenization.Tokens;
+    using Tokens;
     using TrueType;
     using TrueType.Parser;
 
@@ -71,10 +71,11 @@
             return new TrueTypeSimpleFont(name, descriptor, toUnicodeCMap, encoding, font, firstCharacter, widths);
         }
 
-        private TrueTypeFont ParseTrueTypeFont(FontDescriptor descriptor)
+        private TrueTypeFontProgram ParseTrueTypeFont(FontDescriptor descriptor)
         {
             if (descriptor?.FontFile == null)
             {
+                // TODO: check if this font is present on the host OS. See: FileSystemFontProvider.java
                 return null;
             }
 

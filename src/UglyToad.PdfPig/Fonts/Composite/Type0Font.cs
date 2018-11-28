@@ -6,7 +6,7 @@
     using Core;
     using Geometry;
     using IO;
-    using Tokenization.Tokens;
+    using Tokens;
     using Util.JetBrains.Annotations;
 
     /// <summary>
@@ -81,8 +81,7 @@
 
             var width = CidFont.GetWidthFromFont(characterIdentifier);
 
-            var advanceWidth = new PdfRectangle(0, 0, width, 0);
-            advanceWidth = matrix.Transform(advanceWidth);
+            var advanceWidth = matrix.Transform(new PdfPoint(width, 0)).X;
 
             return new CharacterBoundingBox(boundingBox, advanceWidth);
         }

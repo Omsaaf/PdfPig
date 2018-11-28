@@ -4,8 +4,9 @@
     using System.Collections.Generic;
     using System.IO;
     using System.IO.Compression;
+    using System.Linq;
     using Logging;
-    using Tokenization.Tokens;
+    using Tokens;
     using Util;
 
     /// <summary>
@@ -33,7 +34,7 @@
             this.log = log;
         }
 
-        public byte[] Decode(byte[] input, DictionaryToken streamDictionary, int filterIndex)
+        public byte[] Decode(IReadOnlyList<byte> input, DictionaryToken streamDictionary, int filterIndex)
         {
             if (input == null)
             {
@@ -44,9 +45,10 @@
 
             var predictor = parameters.GetIntOrDefault(NameToken.Predictor, -1);
 
+            var bytes = input.ToArray();
             try
             {
-                var decompressed = Decompress(input);
+                var decompressed = Decompress(bytes);
 
                 if (predictor == -1)
                 {
@@ -66,7 +68,7 @@
                 log.Error("Could not decode a flate stream due to an error.", ex);
             }
 
-            return input;
+            return bytes;
         }
 
         private byte[] Decompress(byte[] input)

@@ -10,6 +10,9 @@
         private const string NonLatinAcrobatDistiller = "Single Page Non Latin - from acrobat distiller";
         private const string SingleGoogleDrivePage = "Single Page Simple - from google drive";
         private const string SinglePageFormattedType0Content = "Type0 Font";
+        private const string SinglePageType1Content = "ICML03-081";
+        private const string SingleInkscapePage = "Single Page Simple - from inkscape";
+        private const string PigProduction = "Pig Production Handbook";
 
         private static string GetFilename(string name)
         {
@@ -21,6 +24,18 @@
             }
 
             return Path.Combine(documentFolder, name);
+        }
+
+        [Fact]
+        public void SinglePageWithType1Content()
+        {
+            Run(SinglePageType1Content);
+        }
+
+        [Fact]
+        public void SinglePageSimpleFromInkscape()
+        {
+            Run(SingleInkscapePage, 841);
         }
 
         [Fact]
@@ -44,7 +59,25 @@
         [Fact]
         public void RotatedTextLibreOffice()
         {
-            Run(@"Rotated Text Libre Office", 841);
+            Run("Rotated Text Libre Office", 841);
+        }
+
+        [Fact]
+        public void PigProductionCompactFontFormat()
+        {
+            Run(PigProduction, 680);
+        }
+
+        [Fact]
+        public void PopBugzilla37292()
+        {
+            Run("pop-bugzilla37292");
+        }
+
+        [Fact]
+        public void MultiPageMortalityStatistics()
+        {
+            Run("Multiple Page - from Mortality Statistics");
         }
 
         private static void Run(string file, int imageHeight = 792)
@@ -56,15 +89,22 @@
             {
                 var page = document.GetPage(1);
 
-                var redPen = new Pen(Color.BlueViolet, 1);
+                var violetPen = new Pen(Color.BlueViolet, 1);
+                var greenPen = new Pen(Color.GreenYellow, 1);
 
                 using (var bitmap = new Bitmap(image))
                 using (var graphics = Graphics.FromImage(bitmap))
                 {
-                    foreach (var word in page.Letters)
+                    foreach (var word in page.GetWords())
                     {
-                        graphics.DrawRectangle(redPen, new Rectangle((int)word.GlyphRectangle.Left,
-                            imageHeight - (int)(word.GlyphRectangle.Bottom + word.GlyphRectangle.Height), (int)Math.Max(1, word.GlyphRectangle.Width), (int)word.GlyphRectangle.Height));
+                        graphics.DrawRectangle(greenPen, new Rectangle((int)word.BoundingBox.Left,
+                            imageHeight - (int)word.BoundingBox.Top, (int)word.BoundingBox.Width, (int)word.BoundingBox.Height));
+                    }
+
+                    foreach (var letter in page.Letters)
+                    {
+                        graphics.DrawRectangle(violetPen, new Rectangle((int)letter.GlyphRectangle.Left,
+                            imageHeight - (int)(letter.GlyphRectangle.Bottom + letter.GlyphRectangle.Height), (int)Math.Max(1, letter.GlyphRectangle.Width), (int)letter.GlyphRectangle.Height));
                     }
 
                     var imageName = $"{file}.jpg";

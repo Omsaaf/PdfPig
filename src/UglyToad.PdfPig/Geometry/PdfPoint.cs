@@ -1,5 +1,7 @@
 ﻿namespace UglyToad.PdfPig.Geometry
 {
+    using System.Diagnostics;
+
     /// <summary>
     /// A point in a PDF file. 
     /// </summary>
@@ -13,7 +15,7 @@
         /// <summary>
         /// The origin of the coordinates system.
         /// </summary>
-        public static PdfPoint Origin = new PdfPoint(0m, 0m);
+        public static PdfPoint Origin { get; } = new PdfPoint(0m, 0m);
 
         /// <summary>
         /// The X coordinate for this point. (Horizontal axis).
@@ -28,6 +30,7 @@
         /// <summary>
         /// Create a new <see cref="PdfPoint"/> at this position.
         /// </summary>
+        [DebuggerStepThrough]
         public PdfPoint(decimal x, decimal y)
         {
             X = x;
@@ -37,6 +40,7 @@
         /// <summary>
         /// Create a new <see cref="PdfPoint"/> at this position.
         /// </summary>
+        [DebuggerStepThrough]
         public PdfPoint(int x, int y)
         {
             X = x;
@@ -46,10 +50,31 @@
         /// <summary>
         /// Create a new <see cref="PdfPoint"/> at this position.
         /// </summary>
+        [DebuggerStepThrough]
         public PdfPoint(double x, double y)
         {
             X = (decimal)x;
             Y = (decimal)y;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="PdfPoint"/> which is the current point moved in the x direction relative to its current position by a value.
+        /// </summary>
+        /// <param name="dx">The distance to move the point in the x direction relative to its current location.</param>
+        /// <returns>A new point shifted on the x axis by the given delta value.</returns>
+        public PdfPoint MoveX(decimal dx)
+        {
+            return new PdfPoint(X + dx, Y);
+        }
+        
+        /// <summary>
+        /// Creates a new <see cref="PdfPoint"/> which is the current point moved in the y direction relative to its current position by a value.
+        /// </summary>
+        /// <param name="dy">The distance to move the point in the y direction relative to its current location.</param>
+        /// <returns>A new point shifted on the y axis by the given delta value.</returns>
+        public PdfPoint MoveY(decimal dy)
+        {
+            return new PdfPoint(X, Y + dy);
         }
 
         internal PdfVector ToVector()

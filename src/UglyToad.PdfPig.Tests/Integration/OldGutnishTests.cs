@@ -1,16 +1,13 @@
 ﻿namespace UglyToad.PdfPig.Tests.Integration
 {
-    using System;
-    using System.IO;
+    using System.Linq;
     using Xunit;
 
     public class OldGutnishTests
     {
         private static string GetFilename()
         {
-            var documentFolder = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Integration", "Documents"));
-
-            return Path.Combine(documentFolder, "Old Gutnish Internet Explorer.pdf");
+            return IntegrationHelpers.GetDocumentPath("Old Gutnish Internet Explorer.pdf");
         }
 
         [Fact]
@@ -44,9 +41,9 @@
             {
                 var page = document.GetPage(1);
 
-                page.Content.GetImages();
+                var images = page.ExperimentalAccess.GetRawImages().ToList();
+                Assert.Single(images);
             }
         }
-
     }
 }

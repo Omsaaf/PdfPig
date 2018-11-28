@@ -2,16 +2,17 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Text;
     using Geometry;
 
-    internal abstract class CompactFontFormatDictionaryReader<T>
+    internal abstract class CompactFontFormatDictionaryReader<TResult, TBuilder>
     {
         private readonly List<Operand> operands = new List<Operand>();
 
-        public abstract T Read(CompactFontFormatData data, string[] stringIndex);
+        public abstract TResult Read(CompactFontFormatData data, IReadOnlyList<string> stringIndex);
 
-        protected T ReadDictionary(T dictionary, CompactFontFormatData data, string[] stringIndex)
+        protected TBuilder ReadDictionary(TBuilder builder, CompactFontFormatData data, IReadOnlyList<string> stringIndex)
         {
             while (data.CanRead())
             {
@@ -35,7 +36,7 @@
                     {
                         var key = byte0 == 12 ? new OperandKey(byte0, data.ReadByte()) : new OperandKey(byte0); 
 
-                        ApplyOperation(dictionary, operands, key, stringIndex);
+                        ApplyOperation(builder, operands, key, stringIndex);
                         break;
                     }
 
@@ -87,7 +88,7 @@
                 }
             }
 
-            return dictionary;
+            return builder;
         }
 
         private static decimal ReadRealNumber(CompactFontFormatData data)
@@ -95,6 +96,7 @@
             var sb = new StringBuilder();
             var done = false;
             var exponentMissing = false;
+            var hasExponent = false;
 
             while (!done)
             {
@@ -125,12 +127,24 @@
                             sb.Append(".");
                             break;
                         case 0xb:
+                            if (hasExponent)
+                            {
+                                // avoid duplicates
+                                break;
+                            }
                             sb.Append("E");
                             exponentMissing = true;
+                            hasExponent = true;
                             break;
                         case 0xc:
+                            if (hasExponent)
+                            {
+                                // avoid duplicates
+                                break;
+                            }
                             sb.Append("E-");
                             exponentMissing = true;
+                            hasExponent = true;
                             break;
                         case 0xd:
                             break;
@@ -159,12 +173,12 @@
                 return 0m;
             }
 
-            return decimal.Parse(sb.ToString());
+            return hasExponent ? decimal.Parse(sb.ToString(), NumberStyles.Float) : decimal.Parse(sb.ToString());
         }
 
-        protected abstract void ApplyOperation(T dictionary, List<Operand> operands, OperandKey operandKey, string[] stringIndex);
+        protected abstract void ApplyOperation(TBuilder builder, List<Operand> operands, OperandKey operandKey, IReadOnlyList<string> stringIndex);
 
-        protected static string GetString(List<Operand> operands, string[] stringIndex)
+        protected static string GetString(List<Operand> operands, IReadOnlyList<string> stringIndex)
         {
             if (operands.Count == 0)
             {
@@ -184,7 +198,7 @@
             }
 
             var stringIndexIndex = index - 391;
-            if (stringIndexIndex >= 0 && stringIndexIndex < stringIndex.Length)
+            if (stringIndexIndex >= 0 && stringIndexIndex < stringIndex.Count)
             {
                 return stringIndex[stringIndexIndex];
             }
@@ -230,6 +244,28 @@
             }
 
             return defaultValue;
+        }
+
+        protected static int[] ReadDeltaToIntArray(List<Operand> operands)
+        {
+            var results = new int[operands.Count];
+
+            if (operands.Count == 0)
+            {
+                return results;
+            }
+
+            results[0] = (int)operands[0].Decimal;
+
+            for (var i = 1; i < operands.Count; i++)
+            {
+                var previous = results[i - 1];
+                var current = operands[i].Decimal;
+
+                results[i] = (int)(previous + current);
+            }
+
+            return results;
         }
 
         protected static decimal[] ReadDeltaToArray(List<Operand> operands)

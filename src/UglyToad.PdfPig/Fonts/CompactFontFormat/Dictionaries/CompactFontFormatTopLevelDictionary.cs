@@ -1,6 +1,5 @@
 ﻿namespace UglyToad.PdfPig.Fonts.CompactFontFormat.Dictionaries
 {
-    using System;
     using Core;
     using Geometry;
 
@@ -30,9 +29,9 @@
 
         public decimal PaintType { get; set; }
 
-        public int CharstringType { get; set; } = 2;
+        public CompactFontFormatCharStringType CharStringType { get; set; } = CompactFontFormatCharStringType.Type2;
 
-        public TransformationMatrix FontMatrix { get; set; } = TransformationMatrix.FromValues(0.001m, 0m, 0.001m, 0, 0, 0);
+        public TransformationMatrix FontMatrix { get; set; } = TransformationMatrix.FromValues(0.001m, 0m, 0, 0.001m, 0, 0);
 
         public decimal StrokeWidth { get; set; }
 
@@ -46,12 +45,7 @@
 
         public int EncodingOffset { get; set; } = UnsetOffset;
 
-        private Tuple<int, int> privateDictionarySizeAndOffset = Tuple.Create(0, UnsetOffset);
-        public Tuple<int, int> PrivateDictionarySizeAndOffset
-        {
-            get => privateDictionarySizeAndOffset ?? Tuple.Create(0, UnsetOffset);
-            set => privateDictionarySizeAndOffset = value;
-        }
+        public SizeAndOffset? PrivateDictionaryLocation { get; set; }
 
         public int CharStringsOffset { get; set; } = -1;
 
@@ -62,5 +56,40 @@
         public string BaseFontName { get; set; }
 
         public decimal[] BaseFontBlend { get; set; }
+
+        public bool IsCidFont { get; set; }
+
+        public struct SizeAndOffset
+        {
+            public int Size { get; }
+
+            public int Offset { get; }
+
+            public SizeAndOffset(int size, int offset)
+            {
+                Size = size;
+                Offset = offset;
+            }
+
+            public override string ToString()
+            {
+                return $"Size: {Size}, Offset: {Offset}";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Defines the format of the CharString data contained within a Compact Font Format font.
+    /// </summary>
+    internal enum CompactFontFormatCharStringType
+    {
+        /// <summary>
+        /// The Type 1 CharString format as defined by the Adobe Type 1 Font Format.
+        /// </summary>
+        Type1 = 1,
+        /// <summary>
+        /// The Type 2 CharString format as defined by Adobe Technical Note #5177. This is the default type.
+        /// </summary>
+        Type2 = 2
     }
 }
